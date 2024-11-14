@@ -32,22 +32,35 @@ const CardDisplay = () => {
     };
 
     useEffect(() => {
-        // Fetch Pokémon list once on component mount
-        fetch("https://pokeapi.co/api/v2/pokemon?limit=200&offset=0")
-            .then((response) => response.json())
-            .then((data) => {
-                // Fetch detailed data for all Pokémon
-                return Promise.all(
-                    data.results.map((pokemon) =>
-                        fetch(pokemon.url).then((response) => response.json())
-                    )
-                );
-            })
-            .then((details) => {
-                setAllPokemons(details); // Store detailed Pokémon data
-                setRandomPokemons(details.sort(() => 0.5 - Math.random()).slice(0, 6)); // Initialize random Pokémon
-            })
-            .catch((error) => console.error("Error fetching Pokémon data:", error));
+        const cachedData = localStorage.getItem("allPokemons");
+
+        if (cachedData) {
+            const parsedData = JSON.parse(cachedData);
+            setAllPokemons(parsedData);
+            setRandomPokemons(parsedData.sort(() => 0.5 - Math.random()).slice(0, 6));
+        } else {
+            fetch("https://pokeapi.co/api/v2/pokemon?limit=200&offset=0")
+                .then((response) => response.json())
+                .then((data) => {
+                    return Promise.all(
+                        data.results.map((pokemon) =>
+                            fetch(pokemon.url)
+                                .then((response) => response.json())
+                                .then((details) => ({
+                                    id: details.id,
+                                    name: details.name,
+                                    sprite: details.sprites?.other?.home?.front_default || pokemon?.sprites?.front_default
+                                }))
+                        )
+                    );
+                })
+                .then((simplifiedDetails) => {
+                    localStorage.setItem("allPokemons", JSON.stringify(simplifiedDetails));
+                    setAllPokemons(simplifiedDetails);
+                    setRandomPokemons(simplifiedDetails.sort(() => 0.5 - Math.random()).slice(0, 6));
+                })
+                .catch((error) => console.error("Error fetching Pokémon data:", error));
+        }
     }, []);
 
     return (
