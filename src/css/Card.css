@@ -1,0 +1,5 @@
+.card {
+  cursor: pointer;
+  border: 1px solid yellow;
+  padding: 10px;
+}
